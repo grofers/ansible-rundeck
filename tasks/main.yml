@@ -25,6 +25,7 @@
     createhome=yes
     home=/var/lib/rundeck
     system=yes
+    append=yes
   when: ansible_os_family == 'Debian'
   tags:
     - rundeck

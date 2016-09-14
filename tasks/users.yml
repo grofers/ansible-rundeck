@@ -1,23 +1,24 @@
-# Should ideally create user passwords dynamically like the following but failing:
-- name: Rundeck | encode users password
-  shell: "java -cp {{ rundeck_jetty_jar }} org.eclipse.jetty.util.security.Password {{ item.name }} {{ item.password }} 2>&1 | grep MD5"
-  become: True
-  register: rundeck_encoded_users
-  when: rundeck_users|length > 0
-  with_items: rundeck_users
-
-- name: Rundeck | users passswords
-  debug: var=rundeck_encoded_users
-  when: rundeck_users|length > 0
+- name: Rundeck | create linux users as we use PAM auth
+  user:
+    name: "{{ item.name }}"
+    comment: "{{ system_users[item.name]['name'] }}"
+    shell: /bin/bash
+    groups: adm,dialout
+    append: yes
+    password: "{{ system_users[item.name]['password'] }}"
+  with_items: "{{ rundeck_users }}"
+  tags:
+    - rundeck
+    - users
 
 - name: Rundeck | update basic security to have users
   lineinfile:
     dest: /etc/rundeck/realm.properties
-    regexp: "^{{ item.item.name }}:{{ item.stdout }},{{ item.item.roles|join(',')}}"
-    line: "{{ item.item.name }}:{{ item.stdout }},{{ item.item.roles|join(',')}}"
+    regexp: "^{{ item.name }}"
+    line: "{{ item.name }}: -,{{ item.roles|join(',')}}"
     state: present
-  when: rundeck_users|length > 0 and rundeck_encoded_users|success
-  with_items: rundeck_encoded_users.results
+  when: rundeck_users|length > 0 
+  with_items: "{{ rundeck_users }}"
   notify:
     - restart rundeck
   tags:
@@ -33,6 +34,18 @@
   when: rundeck_users|length > 0
   notify:
     - restart rundeck
+  tags:
+    - rundeck
+    - users
+
+- name: Rundeck | project specific acl policies
+  template:
+    src: etc/rundeck/project.aclpolicy.j2
+    dest: /etc/rundeck/{{ item }}.aclpolicy
+    owner: rundeck
+    group: rundeck
+    mode: 0640
+  with_items: "{{ rundeck_users|sum(attribute='roles', start=[]) |list|unique| difference(rundeck_default_roles)  }}"
   tags:
     - rundeck
     - users
