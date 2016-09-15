@@ -18,10 +18,10 @@
     - users
     - groups
 
-- name: Rundeck | Ensure rundeck user is apart of jetty group
+- name: Rundeck | Ensure rundeck user is apart of groups defined in rundeck_groups
   user: >
     name=rundeck
-    groups=jetty
+    groups={{ rundeck_groups | join(',') }}
     createhome=yes
     home=/var/lib/rundeck
     system=yes
