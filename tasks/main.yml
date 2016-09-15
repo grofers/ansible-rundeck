@@ -21,7 +21,7 @@
 - name: Rundeck | Ensure rundeck user is apart of jetty group
   user: >
     name=rundeck
-    groups=jetty
+    groups={{ rundeck_groups | join(',') }}
     createhome=yes
     home=/var/lib/rundeck
     system=yes
