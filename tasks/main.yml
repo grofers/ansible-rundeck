@@ -18,7 +18,7 @@
     - users
     - groups
 
-- name: Rundeck | Ensure rundeck user is apart of jetty group
+- name: Rundeck | Ensure rundeck user is apart of groups defined in rundeck_groups
   user: >
     name=rundeck
     groups={{ rundeck_groups | join(',') }}
